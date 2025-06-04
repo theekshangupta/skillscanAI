@@ -3,5 +3,4 @@ pdf2image
 pytesseract
 Pillow
 requests
-fitz
 PyMuPDF
