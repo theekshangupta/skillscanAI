@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Resume Analyzer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+    <!-- LOGO -->
+    <div class="logo-container">
+      <img src="https://res.cloudinary.com/dcoijn5mh/image/upload/v1747233519/ChatGPT_Image_May_14__2025__08_05_28_PM-removebg-preview_d1fyef.png" alt="Resume Analyzer Logo" class="logo" />
+    </div>
+<div class="page-content">
+  <!-- UPLOAD CARD -->
+  <div class="upload-container">
+    <div class="upload-card">
+      <h1>Upload Your Resume</h1>
+      <p>
+        Drag &amp; drop your PDF here, or
+        <label for="resume-upload" class="browse-btn">Browse</label>
+      </p>
+      <input type="file" id="resume-upload" name="resume" accept=".pdf" hidden />
+    </div>
+  </div>
+
+  <!-- STEPPER -->
+  <div class="stepper">
+    <div class="step" data-step="1">
+      <div class="circle"></div>
+      <div class="label">Uploaded</div>
+    </div>
+    <div class="connector"></div>
+    <div class="step" data-step="2">
+      <div class="circle"></div>
+      <div class="label">Analysing</div>
+    </div>
+    <div class="connector"></div>
+    <div class="step" data-step="3">
+      <div class="circle"></div>
+      <div class="label">Finished</div>
+    </div>
+  </div>
+  <!-- ACTION BOX -->
+  <div class="action-box hidden">
+    <label class="box-label">Choose an action once the status displays "Finished"</label>
+    <label class="box-label">Generate Cover Letter After Resume Analysis</label>
+    <div class="box-actions">
+      <button class="action-btn" id="analyze-btn">Resume Analysis</button>
+      <button class="action-btn" id="cover-btn">Create Cover Letter</button>
+    </div>
+  </div>
+
+  <!-- RESULT BOX -->
+  <div class="result-box hidden">
+    <label class="box-label">Result</label>
+    <div class="box-content"></div>
+  </div>
+
+</div>
+
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <p>
+      Project by
+      <a href="nii resume link pettuko" target="_blank" rel="noopener">
+        Theekshan Gondela
+      </a>
+    </p>
+  </footer>
+
+  <script>
+  const steps = document.querySelectorAll('.step');
+  const connectors = document.querySelectorAll('.connector');
+  const input = document.getElementById('resume-upload');
+  const resultBox = document.querySelector('.result-box');
+  const resultBody = document.querySelector('.box-content');
+  const actionBox = document.querySelector('.action-box');
+
+  function goToStep(n) {
+    steps.forEach(s => {
+      const idx = Number(s.dataset.step);
+      s.classList.toggle('completed', idx < n);
+      s.classList.toggle('active', idx === n);
+    });
+    connectors.forEach((c, i) => {
+      c.classList.toggle('completed', i < (n - 1));
+    });
+  }
+
+  goToStep(1); // initial state
+
+  input.addEventListener('change', () => {
+    goToStep(1);
+    resultBox.classList.add('hidden');
+    actionBox.classList.add('hidden');
+    resultBody.textContent = '';
+
+    const formData = new FormData();
+    formData.append('resume', input.files[0]);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/analyze', true);
+
+    xhr.upload.onload = () => {
+      goToStep(2);
+    };
+
+    xhr.onload = () => {
+      if (xhr.status === 200) {
+        goToStep(3);
+        input.dataset.text = xhr.responseText;
+        actionBox.classList.remove('hidden');
+      } else {
+        resultBody.textContent = `Error ${xhr.status}: ${xhr.statusText}`;
+        resultBox.classList.remove('hidden');
+        resultBox.classList.add('error');
+        goToStep(3);
+      }
+    };
+
+    xhr.onerror = () => {
+      resultBody.textContent = 'Network error. Please try again.';
+      resultBox.classList.remove('hidden');
+      resultBox.classList.add('error');
+      goToStep(3);
+    };
+
+    xhr.send(formData);
+  });
+
+  // Resume Analysis Button
+  document.getElementById("analyze-btn").addEventListener("click", () => {
+    resultBody.textContent = input.dataset.text;
+    resultBox.classList.remove("hidden");
+    resultBox.classList.remove("error");
+  });
+
+  // Cover Letter Button
+  document.getElementById("cover-btn").addEventListener("click", () => {
+    resultBody.textContent = "Generating cover letter...";
+    resultBox.classList.remove("hidden");
+    resultBox.classList.remove("error");
+
+    fetch("/cover-letter", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: input.dataset.text })
+    })
+      .then(res => res.text())
+      .then(data => {
+        resultBody.textContent = data;
+      })
+      .catch(err => {
+        resultBody.textContent = "Error generating cover letter.";
+        resultBox.classList.add("error");
+      });
+  });
+</script>
+
+</body>
+</html>
