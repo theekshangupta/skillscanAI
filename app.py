@@ -13,9 +13,9 @@ def home():
     return render_template('home.html')
 
 @app.route('/index')
-def index():
+def index(): 
     return render_template('index.html')
-
+#redo it
 @app.route("/analyze", methods=["POST"])
 def analyze():
     if "resume" not in request.files:
